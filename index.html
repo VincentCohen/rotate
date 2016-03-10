@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+  <head>
+    <style>
+      svg { border: 2px solid black; }
+
+      .subunit { fill: #eee; }
+
+      .subunit.NLX { fill: #1bc0dd; }
+
+      .place-label {
+        font-size: 12px;
+        font-family: sans-serif;
+        padding-left: 12px;
+        color: #e2e2e2
+      }
+
+      .subunit-boundary {
+        fill: none;
+        stroke: #777;
+        stroke-dasharray: 2,2;
+        stroke-linejoin: round;
+      }
+
+      .subunit-boundary {
+        stroke: #aa0002;
+      }
+
+      .subunit-label {
+        fill: #777;
+        fill-opacity: .5;
+        font-size: 20px;
+        font-weight: 300;
+        text-anchor: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <h1></h1>
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="//d3js.org/queue.v1.min.js"></script>
+    <script src="//d3js.org/topojson.v1.min.js"></script>
+
+    <script>
+
+      var width = 960,
+      height = 960;
+
+      var projection = d3.geo.orthographic()
+      .translate([width / 2, height / 2])
+      .scale(width / 2 - 20)
+      .clipAngle(90)
+      .precision(0.6);
+
+      var canvas = d3.select("body").append("canvas")
+      .attr("width", width)
+      .attr("height", height);
+
+      var c = canvas.node().getContext("2d");
+
+      var path = d3.geo.path()
+      .projection(projection)
+      .context(c);
+
+      var title = d3.select("h1");
+
+      queue()
+      .defer(d3.json, "data/src/world-110m.json")
+      .await(ready);
+
+      function ready(error, world, names) {
+        if (error) throw error;
+
+        var globe = {type: "Sphere"},
+        land = topojson.feature(world, world.objects.land),
+        countries = topojson.feature(world, world.objects.countries).features,
+        borders = topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }),
+        i = -1,
+        n = countries.length;
+        var long = 0.000;
+
+        (function transition() {
+          d3.transition()
+          .duration(1)
+          .each("start", function() {
+            title.text(countries[i = (i + 1) % n].name);
+          })
+          .tween("rotate", function() {
+            var p = d3.geo.centroid(countries[i]),
+            r = d3.interpolate(projection.rotate(), [51.5058329,4.2794511]);
+
+            return function(t) {
+              projection.rotate(r(t));
+
+              c.clearRect(0, 0, width, height);
+              c.fillStyle = "#ccc", c.beginPath(), path(land), c.fill();
+              c.strokeStyle = "#fff", c.lineWidth = .5, c.beginPath(), path(borders), c.stroke();
+              c.strokeStyle = "#e2e2e2", c.lineWidth = 2, c.beginPath(), path(globe), c.stroke();
+            };
+          })
+          .transition()
+          .each("end", transition);
+        })();
+      }
+
+      d3.select(self.frameElement).style("height", height + "px");
+
+    </script>
+  </body>
+</html>
