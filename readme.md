@@ -17,7 +17,7 @@ ogr2ogr \
   ne_10m_populated_places.shp
 ```
 
-# generate combined feed
+# Generate combined feed
 ``` bash
 topojson \
   -o nl.json \
